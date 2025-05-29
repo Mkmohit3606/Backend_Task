@@ -4,16 +4,17 @@ import { sequelize } from "../db/db";
 export const Course = sequelize.define(
   "Course",
   {
-    course_name: { type: DataTypes.STRING, allowNull: false },
-    instructor_name: { type: DataTypes.STRING, allowNull: false },
-    start_date: { type: DataTypes.STRING, allowNull: false },
-    min_employees: { type: DataTypes.INTEGER, allowNull: false },
-    max_employees: { type: DataTypes.INTEGER, allowNull: false },
-    course_id: {
-      type: DataTypes.STRING,
-      unique: true,
-    },
+  course_name: { type: DataTypes.STRING, allowNull: false },
+  instructor_name: { type: DataTypes.STRING, allowNull: false },
+  start_date: { type: DataTypes.STRING, allowNull: false },
+  min_employees: { type: DataTypes.INTEGER, allowNull: false },
+  max_employees: { type: DataTypes.INTEGER, allowNull: false },
+  course_id: {
+    type: DataTypes.STRING,
+    unique: true,
   },
+  status:{type:DataTypes.ENUM('ACCEPTED', 'COURSE_FULL_ERROR', 'COURSE_CANCELED'),defaultValue:'ACCEPTED'},
+},
   {
     hooks: {
       beforeCreate: (course: any) => {

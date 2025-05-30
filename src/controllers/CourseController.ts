@@ -9,7 +9,7 @@ interface CourseInput {
   max_employees: number;
 }
 
-const addCourse = async(req: Request, res: Response):Promise<void> => {
+const addCourse = async(req: Request, res: Response):Promise<void> => { //note how to direct interface
   const {course_name,instructor_name,start_date,min_employees,max_employees}:CourseInput = req.body;
   // Check if any required field is missing or blank
   const isMissing:Boolean = 

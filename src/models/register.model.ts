@@ -10,7 +10,7 @@ export const Register = sequelize.define('REGISTER', {
     employee_name: { type: DataTypes.STRING, allowNull: false },
     email: { type: DataTypes.STRING, allowNull: false },
     course_id: { type: DataTypes.STRING, allowNull: false },
-    status: { type: DataTypes.ENUM('CANCEL_ACCEPTED','CANCEL_REJECTED','ACCEPTED','COURSE_ALLOCAT','COURSE_CANCELED') , defaultValue:'ACCEPTED'}
+    status: { type: DataTypes.ENUM('ACCEPTED','CONFIRMED','CANCELED') , defaultValue:'ACCEPTED'}
 }, {
     hooks: {
         beforeValidate: (Register: any) => {

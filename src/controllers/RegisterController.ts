@@ -4,9 +4,32 @@ import { Course } from "../models/courses.model";
 import { Op } from "sequelize";
 
 interface registerInput{
-  employee_name:String,
-  email:String,
-  course_id:String
+  employee_name:string,
+  email:string,
+  course_id:string
+}
+
+const STATUS = {
+  ACCEPTED: 'ACCEPTED',
+  CONFIRMED: 'CONFIRMED',
+  CANCELED: 'CANCELED'
+} as const;
+
+//define the type for the update the status of register.
+type StatusType = typeof STATUS[keyof typeof STATUS];
+
+// create the function for update
+async function updateStatus(course_id:string, status:StatusType) {
+    await Register.update({status},{where:{course_id}});
+}
+
+//create the function for check is cancelled or confirmed
+function isConfirmed(status: StatusType): boolean {
+  return status === STATUS.CONFIRMED;
+}
+
+function isCanceled(status: StatusType): boolean {
+  return status === STATUS.CANCELED;
 }
 
 const registerCourse = async (req: Request, res: Response): Promise<void> => {
@@ -57,7 +80,7 @@ const registerCourse = async (req: Request, res: Response): Promise<void> => {
   const courseStartDate:Date = new Date(
   +course.start_date.slice(4),        // year
   +course.start_date.slice(2, 4) - 1, // month (0-indexed)
-  +course.start_date.slice(0, 2)+1   // day
+  +course.start_date.slice(0, 2) + 1   // day
 );
   console.log(courseStartDate);
   if (courseStartDate < new Date()) {
@@ -137,7 +160,7 @@ const allotCourse = async(req:Request,res:Response):Promise<void>=>{
     const courseStartDate = new Date(
       +course.start_date.slice(4),        // year
       +course.start_date.slice(2, 4) - 1, // month (0-indexed)
-      +course.start_date.slice(0, 2)+1      // day
+      +course.start_date.slice(0, 2) + 1      // day
     );
 
     // Check if course has started or today is the date
@@ -155,20 +178,19 @@ const allotCourse = async(req:Request,res:Response):Promise<void>=>{
     });
 
     // Check if minimum registration met
-    let courseFinalStatus = 'ACCEPTED';
     //If sufficient registrations are not received then the course offering itself gets cancelled.
     if(getRegisterUser.length<course.min_employees && courseStartDate<now){
       course.status='COURSE_CANCELED';
-      courseFinalStatus ='COURSE_CANCELED';
       await course.save();
-      await Register.update({status:'COURSE_CANCELED'},{where:{ course_id }});
+      await updateStatus(course_id,'CANCELED');
     }
 
     //This feature allots employees to course offering, before the course offering date.
     if(getRegisterUser.length>=course.min_employees && getRegisterUser.length<=course.max_employees){
       course.status = 'ACCEPTED';
       await course.save();
-      await Register.update({status:'COURSE_ALLOCAT'},{where:{ course_id }});
+      // await Register.update({status:'CONFIRMED'},{where:{ course_id }});
+      await updateStatus(course_id,'CONFIRMED');
     }
     const responseData = getRegisterUser.map((user)=>({
       registration_id:user.registration_id,
@@ -193,7 +215,7 @@ const allotCourse = async(req:Request,res:Response):Promise<void>=>{
   }
 }
 
-const cancelAllot = async (req: Request, res: Response): Promise<void> => {
+const cancelRegister = async (req: Request, res: Response): Promise<void> => {
   const { registration_id } = req.params;
 
   try {
@@ -217,7 +239,7 @@ const cancelAllot = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (getAllotUser.status === 'COURSE_ALLOCAT') {
+    if (isConfirmed(getAllotUser.status)) { 
       res.status(200).json({
         status: 200,
         message: `Cancellation rejected - already allotted`,
@@ -232,10 +254,10 @@ const cancelAllot = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if(getAllotUser.status ==='COURSE_CANCELED'){
+    if(isCanceled(getAllotUser.status)){
       res.status(200).json({
         status: 200,
-        message: `Cancellation rejected - course has been canceled`,
+        message: `Course already canceled`,
         data: {
           success: {
             registration_id,
@@ -248,7 +270,7 @@ const cancelAllot = async (req: Request, res: Response): Promise<void> => {
     }
 
 
-    await getAllotUser.update({ status: 'CANCEL_REJECTED' });
+    await getAllotUser.update({ status: 'CANCELED' });
 
     res.status(200).json({
       status: 200,
@@ -257,7 +279,7 @@ const cancelAllot = async (req: Request, res: Response): Promise<void> => {
         success: {
           registration_id,
           course_id: getAllotUser.course_id,
-          status: 'CANCEL_REJECTED',
+          status: 'CANCEL_ACCEPTED',
         },
       },
     });
@@ -274,5 +296,5 @@ const cancelAllot = async (req: Request, res: Response): Promise<void> => {
 export const RegisterController = {
   registerCourse,
   allotCourse,
-  cancelAllot
+  cancelRegister
 };
